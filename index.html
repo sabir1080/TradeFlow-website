@@ -3,6 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- ==========================================================================
+     Google Analytics 4 (GA4) — configuration
+     ==========================================================================
+     Replace the placeholder below with your real GA4 Measurement ID
+     (Google Analytics → Admin → Data Streams → your web stream →
+     "Measurement ID" — looks like G-XXXXXXXXXX). Until you do, no data is
+     sent to Google and no console errors occur. See analytics.js and the
+     README "Analytics (GA4)" section for full details of what is tracked.
+     ========================================================================== -->
+<script>window.GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';</script>
+<script src="analytics.js"></script>
+
 <title>TradeFlow ERP — Inventory, POS, Purchasing &amp; Double-Entry Accounting Software</title>
 <meta name="description" content="TradeFlow ERP is a complete business platform — inventory, point of sale, purchasing, sales and double-entry accounting in one system. Explore 45 real application screens, pricing and custom software development by Sabir Shah.">
 <meta name="keywords" content="TradeFlow ERP, ERP software Pakistan, inventory software, POS software, accounting software, double entry accounting, custom software development, business management software">
@@ -54,7 +67,7 @@
 <div class="grid-lines" aria-hidden="true"></div>
 
 <div class="topbar">
-  <b>TradeFlow ERP</b> — Grow your business faster. &nbsp;<a href="#contact">Book a free demo →</a>
+  <b>TradeFlow ERP</b> — Grow your business faster. &nbsp;<a href="#contact" data-cta="Book a Free Demo (Topbar)">Book a free demo →</a>
 </div>
 
 <header class="nav-wrap" id="navWrap">
@@ -80,7 +93,7 @@
         <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>
       </button>
-      <a class="btn btn--primary btn--sm nav-cta" href="#contact">Get a Demo <span>→</span></a>
+      <a class="btn btn--primary btn--sm nav-cta" href="#contact" data-cta="Get a Demo (Nav)">Get a Demo <span>→</span></a>
       <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
         <i></i><i></i><i></i>
       </button>
@@ -107,8 +120,8 @@
           around your exact workflow.
         </p>
         <div class="hero-actions">
-          <a class="btn btn--primary btn--lg" href="#screens">Explore 45 Real Screens <span>→</span></a>
-          <a class="btn btn--ghost btn--lg" href="#contact">Book a Free Demo</a>
+          <a class="btn btn--primary btn--lg" href="#screens" data-cta="Explore 45 Real Screens">Explore 45 Real Screens <span>→</span></a>
+          <a class="btn btn--ghost btn--lg" href="#contact" data-cta="Book a Free Demo (Hero)">Book a Free Demo</a>
         </div>
         <div class="hero-stats">
           <div><strong>45</strong><span>Real application screens</span></div>
@@ -507,8 +520,8 @@
             <li>Business &amp; operational reports</li>
           </ul>
           <div class="price-actions">
-            <button type="button" class="btn btn--ghost btn--sm price-action-print">🖶 Print Agreement</button>
-            <button type="button" class="btn btn--primary btn--sm price-action-interest">I'm Interested</button>
+            <button type="button" class="btn btn--ghost btn--sm price-action-print" data-cta="Print Agreement">🖶 Print Agreement</button>
+            <button type="button" class="btn btn--primary btn--sm price-action-interest" data-cta="I'm Interested">I'm Interested</button>
           </div>
         </article>
 
@@ -529,8 +542,8 @@
             <li>Trial Balance, P&amp;L &amp; Balance Sheet</li>
           </ul>
           <div class="price-actions">
-            <button type="button" class="btn btn--ghost btn--sm price-action-print">🖶 Print Agreement</button>
-            <button type="button" class="btn btn--primary btn--sm price-action-interest">I'm Interested</button>
+            <button type="button" class="btn btn--ghost btn--sm price-action-print" data-cta="Print Agreement">🖶 Print Agreement</button>
+            <button type="button" class="btn btn--primary btn--sm price-action-interest" data-cta="I'm Interested">I'm Interested</button>
           </div>
         </article>
 
@@ -551,8 +564,8 @@
             <li>HR, attendance &amp; payroll reports</li>
           </ul>
           <div class="price-actions">
-            <button type="button" class="btn btn--ghost btn--sm price-action-print">🖶 Print Agreement</button>
-            <button type="button" class="btn btn--primary btn--sm price-action-interest">I'm Interested</button>
+            <button type="button" class="btn btn--ghost btn--sm price-action-print" data-cta="Print Agreement">🖶 Print Agreement</button>
+            <button type="button" class="btn btn--primary btn--sm price-action-interest" data-cta="I'm Interested">I'm Interested</button>
           </div>
         </article>
 
@@ -574,8 +587,8 @@
             <li>Priority setup &amp; data migration</li>
           </ul>
           <div class="price-actions">
-            <button type="button" class="btn btn--ghost btn--sm price-action-print">🖶 Print Agreement</button>
-            <button type="button" class="btn btn--primary btn--sm price-action-interest">Book a Demo</button>
+            <button type="button" class="btn btn--ghost btn--sm price-action-print" data-cta="Print Agreement">🖶 Print Agreement</button>
+            <button type="button" class="btn btn--primary btn--sm price-action-interest" data-cta="I'm Interested">Book a Demo</button>
           </div>
         </article>
       </div>
@@ -834,13 +847,13 @@
           will tell you honestly what it would take.
         </p>
         <div class="hero-actions">
-          <a class="btn btn--light btn--lg" href="https://wa.me/923453231545" target="_blank" rel="noopener">WhatsApp Us <span>→</span></a>
-          <a class="btn btn--outline btn--lg" href="mailto:sabir1212@yahoo.com?subject=TradeFlow%20ERP%20Enquiry">Send an Email</a>
+          <a class="btn btn--light btn--lg" href="https://wa.me/923453231545" target="_blank" rel="noopener" data-cta="WhatsApp Us">WhatsApp Us <span>→</span></a>
+          <a class="btn btn--outline btn--lg" href="mailto:sabir1212@yahoo.com?subject=TradeFlow%20ERP%20Enquiry" data-cta="Send an Email">Send an Email</a>
         </div>
         <div class="cta-contacts">
-          <a href="https://wa.me/923453231545" target="_blank" rel="noopener">📱 +92 345 3231545</a>
-          <a href="mailto:sabir1212@yahoo.com">✉️ sabir1212@yahoo.com</a>
-          <a href="#pricing">💠 View pricing</a>
+          <a href="https://wa.me/923453231545" target="_blank" rel="noopener" data-cta="Contact - Phone">📱 +92 345 3231545</a>
+          <a href="mailto:sabir1212@yahoo.com" data-cta="Contact - Email">✉️ sabir1212@yahoo.com</a>
+          <a href="#pricing" data-cta="View Pricing">💠 View pricing</a>
         </div>
       </div>
     </div>
@@ -1003,9 +1016,9 @@
     </div>
     <div>
       <b>Contact</b>
-      <a href="mailto:sabir1212@yahoo.com">sabir1212@yahoo.com</a>
-      <a href="https://wa.me/923453231545" target="_blank" rel="noopener">+92 345 3231545</a>
-      <a href="#contact">Book a demo</a>
+      <a href="mailto:sabir1212@yahoo.com" data-cta="Contact - Email (Footer)">sabir1212@yahoo.com</a>
+      <a href="https://wa.me/923453231545" target="_blank" rel="noopener" data-cta="Contact - Phone (Footer)">+92 345 3231545</a>
+      <a href="#contact" data-cta="Book a Demo (Footer)">Book a demo</a>
     </div>
   </div>
   <div class="container copyright">
@@ -1014,7 +1027,7 @@
   </div>
 </footer>
 
-<a class="wa-float" href="https://wa.me/923453231545" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+<a class="wa-float" href="https://wa.me/923453231545" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" data-cta="WhatsApp Float">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 14.4c-.3-.2-1.8-.9-2-1-.3-.1-.5-.2-.7.1-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5s-.7-1.6-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.2.2 2.1 3.2 5.1 4.4.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3.1.8.8-3-.2-.3a8.2 8.2 0 1 1 7.2 3.9z"/></svg>
 </a>
 
