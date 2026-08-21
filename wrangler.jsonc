@@ -1,0 +1,13 @@
+{
+  // Cloudflare Workers config for the "tradeflow-website" Worker.
+  // This is a static-assets-only Worker (no server-side script) — Workers
+  // Builds runs `wrangler deploy`, which needs this file to know what to
+  // serve. Without it, the build fails with "missing entry-point / no
+  // Wrangler configuration found".
+  "name": "tradeflow-website",
+  "compatibility_date": "2024-11-01",
+  "assets": {
+    "directory": "./",
+    "not_found_handling": "404-page"
+  }
+}
