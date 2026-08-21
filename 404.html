@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Page Not Found — TradeFlow ERP</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/logo/Logo (4).png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script>
+  try{
+    var t = localStorage.getItem('tf-theme');
+    if(!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+</script>
+</head>
+<body>
+
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<section class="cta-section" style="min-height:100vh;display:grid;place-items:center">
+  <div class="container">
+    <div class="cta">
+      <div class="eyebrow">Error 404</div>
+      <h2 style="font-size:clamp(56px,10vw,110px);line-height:1">404</h2>
+      <p>This page does not exist — it may have been moved or the link is incorrect.</p>
+      <div class="hero-actions" style="justify-content:center;margin-top:30px">
+        <a class="btn btn--light btn--lg" href="/">Back to TradeFlow <span>→</span></a>
+        <a class="btn btn--outline btn--lg" href="/#screens">View the software</a>
+      </div>
+      <div class="cta-contacts">
+        <a href="/#pricing">Pricing</a>
+        <a href="/#faq">FAQ</a>
+        <a href="/#contact">Contact</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
