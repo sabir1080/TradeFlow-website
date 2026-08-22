@@ -1,13 +1,30 @@
 {
   // Cloudflare Workers config for the "tradeflow-website" Worker.
-  // This is a static-assets-only Worker (no server-side script) — Workers
-  // Builds runs `wrangler deploy`, which needs this file to know what to
-  // serve. Without it, the build fails with "missing entry-point / no
-  // Wrangler configuration found".
+  //
+  // "main" runs src/worker.js for EVERY request. It handles the feedback
+  // API and the password-gated /admin dashboard, then falls through to
+  // env.ASSETS.fetch() for everything else — so the static site (assets
+  // directory "./") is served exactly as before for all other routes.
+  //
+  // One-time setup required after this deploys (see README "Feedback
+  // System" section for full detail):
+  //   1. wrangler d1 create tradeflow_feedback
+  //      -> paste the returned database_id below
+  //   2. wrangler d1 migrations apply tradeflow_feedback --remote
+  //   3. wrangler secret put ADMIN_PASSWORD
   "name": "tradeflow-website",
   "compatibility_date": "2024-11-01",
+  "main": "src/worker.js",
   "assets": {
     "directory": "./",
+    "binding": "ASSETS",
     "not_found_handling": "404-page"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tradeflow_feedback",
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+    }
+  ]
 }
