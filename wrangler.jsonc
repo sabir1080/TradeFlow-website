@@ -6,12 +6,17 @@
   // env.ASSETS.fetch() for everything else — so the static site (assets
   // directory "./") is served exactly as before for all other routes.
   //
-  // One-time setup required after this deploys (see README "Feedback
-  // System" section for full detail):
+  // REQUIRED BEFORE THE FIRST DEPLOY OF THIS FILE CAN SUCCEED:
+  // database_id below is still a placeholder. Cloudflare Workers Builds
+  // will fail (error 10021, "binding DB of type d1 must have a valid id
+  // specified") until a real D1 database exists and its id replaces it.
+  // See README "Feedback System" for full detail. From a machine with
+  // `wrangler login` done:
   //   1. wrangler d1 create tradeflow_feedback
-  //      -> paste the returned database_id below
+  //      -> paste the returned database_id below, replacing the placeholder
   //   2. wrangler d1 migrations apply tradeflow_feedback --remote
   //   3. wrangler secret put ADMIN_PASSWORD
+  // Once database_id is real, commit this file — the next push deploys.
   "name": "tradeflow-website",
   "compatibility_date": "2024-11-01",
   "main": "src/worker.js",

@@ -173,10 +173,17 @@ Cloudflare Worker (`src/worker.js`) and a D1 database. Every submission is
 stored as its own row — nothing is pre-aggregated — so an admin can slice
 by day/week/month/year/custom range, by page, or by response.
 
-### One-time setup (required — I cannot run these for you)
+### One-time setup — required before Cloudflare Workers Builds can deploy at all
 
-These provision real Cloudflare account resources, so they need to be run
-by whoever owns the Cloudflare account, from a machine with `wrangler`
+`wrangler.jsonc` currently has a placeholder `database_id`. Until it's
+replaced with a real one, **every** Cloudflare Workers Build for this repo
+fails — not just the feedback feature — with Cloudflare error 10021
+("binding DB of type d1 must have a valid id specified"), because Wrangler
+tries to attach the D1 binding to a database that doesn't exist yet. This
+isn't a code bug and can't be fixed from a commit alone: a real D1
+database has to exist in the Cloudflare account first. These steps
+provision that (and the admin password), so they need to be run by
+whoever owns the Cloudflare account, from a machine with `wrangler`
 logged in (`wrangler login`):
 
 ```bash
