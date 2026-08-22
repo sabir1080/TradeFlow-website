@@ -52,6 +52,13 @@
   var sections = $$('main section[id]');
   var navAnchors = navLinks ? $$('a', navLinks) : [];
 
+  // Analytics: fire a lightweight `section_view` event the first time each
+  // real section (Home, Platform, Screens, Pricing, FAQ, Contact, etc.)
+  // scrolls into view. This is a custom event, not a GA4 page_view — this
+  // is a single real HTML page, so the automatic page_view from analytics.js
+  // already covers the page load and we never send a second one.
+  var trackedSections = {};
+
   function onScroll() {
     if (navWrap) navWrap.classList.toggle('scrolled', window.scrollY > 8);
 
@@ -63,6 +70,12 @@
     navAnchors.forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('href') === '#' + currentId);
     });
+
+    var trackId = currentId || 'home';
+    if (!trackedSections[trackId] && window.tfTrack) {
+      trackedSections[trackId] = true;
+      window.tfTrack('section_view', { section_id: trackId });
+    }
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
@@ -239,6 +252,7 @@
     lightbox.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     $('.lightbox-close', lightbox).focus();
+    if (window.tfTrack) window.tfTrack('screenshot_opened', { image_name: s[2], section: s[1] });
   }
 
   function closeScreen() {
@@ -303,6 +317,31 @@
   if (year) year.textContent = new Date().getFullYear();
 
   /* ------------------------------------------------------------------
+     8a. Analytics — centralised CTA click tracking.
+     Any element carrying data-cta="..." fires a cta_clicked event
+     (nav / hero / contact CTAs, and also the Print Agreement and
+     I'm Interested buttons — those additionally fire their own
+     richer, plan-specific events below).
+     ------------------------------------------------------------------ */
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-cta]');
+    if (!el || !window.tfTrack) return;
+    window.tfTrack('cta_clicked', { cta_name: el.dataset.cta });
+  });
+
+  /* ------------------------------------------------------------------
+     8b. Analytics — FAQ open tracking (native <details> elements).
+     ------------------------------------------------------------------ */
+  $$('.faq details').forEach(function (d) {
+    d.addEventListener('toggle', function () {
+      if (!d.open || !window.tfTrack) return;
+      var summary = $('summary', d);
+      var question = summary ? summary.textContent.trim() : '';
+      window.tfTrack('faq_opened', { question: question.slice(0, 80) });
+    });
+  });
+
+  /* ------------------------------------------------------------------
      9. Pricing — licence type (Perpetual / Subscription) and
      currency (PKR / USD) toggles.
      Each .price card carries its own fixed figures as data attributes
@@ -344,23 +383,38 @@
 
     licenseBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
+        var previousLicense = state.license;
         state.license = btn.dataset.license;
         licenseBtns.forEach(function (b) {
           b.classList.toggle('active', b === btn);
           b.setAttribute('aria-selected', String(b === btn));
         });
         renderPrices();
+        if (window.tfTrack && previousLicense !== state.license) {
+          window.tfTrack('pricing_license_changed', {
+            previous_license: previousLicense === 'perpetual' ? 'Perpetual' : 'Subscription',
+            new_license: state.license === 'perpetual' ? 'Perpetual' : 'Subscription',
+            currency: state.currency.toUpperCase()
+          });
+        }
       });
     });
 
     currencyBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
+        var previousCurrency = state.currency;
         state.currency = btn.dataset.currency;
         currencyBtns.forEach(function (b) {
           b.classList.toggle('active', b === btn);
           b.setAttribute('aria-selected', String(b === btn));
         });
         renderPrices();
+        if (window.tfTrack && previousCurrency !== state.currency) {
+          window.tfTrack('pricing_currency_changed', {
+            previous_currency: previousCurrency.toUpperCase(),
+            new_currency: state.currency.toUpperCase()
+          });
+        }
       });
     });
 
@@ -449,6 +503,45 @@
     }
 
     /* ----------------------------------------------------------------
+       9b-1. trackParams(p) — turns a getCurrentPricingState() result
+       into a flat, non-PII GA4 event-parameter object. Used by every
+       pricing-related event below (plan views, Print Agreement,
+       Interest form). Never includes anything from the client-details
+       forms (name, email, phone, address, message).
+       ---------------------------------------------------------------- */
+    function trackParams(p) {
+      return {
+        plan_name: p.planName,
+        plan_id: p.planId,
+        license_type: p.licenseKey === 'perpetual' ? 'Perpetual' : 'Subscription',
+        currency: p.currency,
+        price: p.price || '',
+        setup_fee: p.setupFee || '',
+        monthly_fee: p.monthlyFee || ''
+      };
+    }
+
+    /* ----------------------------------------------------------------
+       9b-2. pricing_plan_viewed — fired once per plan, the first time
+       its card is at least half visible in the viewport.
+       ---------------------------------------------------------------- */
+    if ('IntersectionObserver' in window && priceCards.length) {
+      var viewedPlans = {};
+      var priceIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          var card = entry.target;
+          var planId = card.dataset.planId;
+          if (viewedPlans[planId]) return;
+          viewedPlans[planId] = true;
+          if (window.tfTrack) window.tfTrack('pricing_plan_viewed', trackParams(getCurrentPricingState(card)));
+          priceIO.unobserve(card);
+        });
+      }, { threshold: 0.5 });
+      priceCards.forEach(function (card) { priceIO.observe(card); });
+    }
+
+    /* ----------------------------------------------------------------
        9c. Small modal helpers, shared by both dialogs.
        ---------------------------------------------------------------- */
     function openModal(modal) {
@@ -496,11 +589,14 @@
     var interestModal = $('#interestModal');
     var interestForm = $('#interestForm');
     var activeInterestCard = null;
+    var interestStarted = false;
 
     $$('.price-action-interest', priceGrid).forEach(function (btn) {
       btn.addEventListener('click', function () {
         activeInterestCard = btn.closest('.price');
         var p = getCurrentPricingState(activeInterestCard);
+        interestStarted = false;
+        if (window.tfTrack) window.tfTrack('interest_form_opened', trackParams(p));
         $('#interestPlanSummary').innerHTML = planSummaryHTML(p);
         $('#interestStepForm').hidden = false;
         $('#interestStepSuccess').hidden = true;
@@ -509,6 +605,16 @@
         openModal(interestModal);
       });
     });
+
+    // Analytics: form-abandonment signal — fires once, the first time the
+    // visitor actually starts filling the form after opening it.
+    if (interestForm) {
+      interestForm.addEventListener('input', function () {
+        if (interestStarted || !activeInterestCard || !window.tfTrack) return;
+        interestStarted = true;
+        window.tfTrack('interest_form_started', trackParams(getCurrentPricingState(activeInterestCard)));
+      });
+    }
 
     function validateInterestForm(data) {
       var errors = {};
@@ -596,7 +702,10 @@
             errEl.textContent = '';
           }
         });
-        if (Object.keys(errors).length) return;
+        if (Object.keys(errors).length) {
+          if (window.tfTrack) window.tfTrack('interest_form_validation_error', { error_fields: Object.keys(errors).join(',') });
+          return;
+        }
 
         var p = getCurrentPricingState(activeInterestCard);
         var email = buildEnquiryEmail(p, data);
@@ -605,6 +714,7 @@
           + '&body=' + encodeURIComponent(email.body);
 
         window.location.href = mailto;
+        if (window.tfTrack) window.tfTrack('interest_form_submitted', trackParams(p));
 
         $('#interestSuccessSummary').innerHTML = planSummaryHTML(p);
         $('#interestStepForm').hidden = true;
@@ -624,6 +734,7 @@
       btn.addEventListener('click', function () {
         activeAgreementCard = btn.closest('.price');
         var p = getCurrentPricingState(activeAgreementCard);
+        if (window.tfTrack) window.tfTrack('print_agreement_clicked', trackParams(p));
         $('#agreementPlanSummary').innerHTML = planSummaryHTML(p);
         $('#agreementStepForm').hidden = false;
         $('#agreementStepPreview').hidden = true;
