@@ -683,34 +683,18 @@
     </div>
   </section>
 
-  <!-- ==================== TESTIMONIALS ==================== -->
-  <section class="section" id="testimonials">
+  <!-- ==================== TESTIMONIALS ====================
+       Populated entirely from GET /api/testimonials (admin-approved
+       "yes" feedback comments only). Hidden until script.js finds at
+       least one approved testimonial - no hardcoded/sample content. -->
+  <section class="section" id="testimonials" hidden>
     <div class="container">
       <div class="section-head center reveal">
         <div class="eyebrow">What users say</div>
         <h2>Software judged by <span class="grad-text">the people using it.</span></h2>
-        <p>Feedback from businesses running TradeFlow and custom-built systems day to day.</p>
+        <p>Feedback from visitors of this site.</p>
       </div>
-      <div class="quote-grid">
-        <article class="quote card reveal">
-          <div class="quote-stars" aria-label="5 out of 5">★★★★★</div>
-          <p>“Pehle stock register alag tha aur accounts alag. TradeFlow ke baad ek hi entry se dono update ho jate hain — mahine ke end par closing ab ghanton ka kaam nahi raha.”</p>
-          <div class="quote-who"><em>AK</em><div><strong>Retail Store Owner</strong><span>Karachi</span></div></div>
-        </article>
-        <article class="quote card reveal d1">
-          <div class="quote-stars" aria-label="5 out of 5">★★★★★</div>
-          <p>“The POS is genuinely fast at the counter, which was our main worry. What surprised us was the reporting — we can finally see which items actually make money.”</p>
-          <div class="quote-who"><em>MS</em><div><strong>Wholesale Distributor</strong><span>Lahore</span></div></div>
-        </article>
-        <article class="quote card reveal d2">
-          <div class="quote-stars" aria-label="5 out of 5">★★★★★</div>
-          <p>“We needed an attendance and payroll system that matched our shift rules exactly. It was built the way we described it, and support after delivery has been reliable.”</p>
-          <div class="quote-who"><em>FR</em><div><strong>Operations Manager</strong><span>Custom software client</span></div></div>
-        </article>
-      </div>
-      <p style="text-align:center;margin-top:22px;font-size:12.5px;color:var(--text-3)" class="reveal">
-        Client names withheld on request. References can be shared on serious enquiry.
-      </p>
+      <div class="quote-grid" id="testimonialGrid"></div>
     </div>
   </section>
 
