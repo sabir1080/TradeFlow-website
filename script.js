@@ -915,4 +915,95 @@
       });
     }
   }
+
+  /* ------------------------------------------------------------------
+     12. Feedback widget — Yes/No + optional comment/email, posted to
+     the /api/feedback Worker endpoint. Public JS never reads counts
+     or other visitors' feedback back from the server.
+     ------------------------------------------------------------------ */
+  var feedbackForm = $('#feedbackForm');
+  if (feedbackForm) {
+    var feedbackBtns = $$('.feedback-btn');
+    var feedbackResponse = '';
+    var feedbackMsg = $('.feedback-msg', feedbackForm);
+    var feedbackResponseError = $('#feedbackResponseError');
+    var feedbackSubmitBtn = $('.feedback-submit', feedbackForm);
+    var feedbackPage = function () { return window.location.pathname + window.location.hash; };
+
+    feedbackBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        feedbackResponse = btn.dataset.response;
+        feedbackBtns.forEach(function (b) { b.classList.toggle('active', b === btn); });
+        if (feedbackResponseError) feedbackResponseError.textContent = '';
+        if (window.tfTrack) window.tfTrack(feedbackResponse === 'yes' ? 'feedback_yes' : 'feedback_no', { page: feedbackPage() });
+      });
+    });
+
+    feedbackForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!feedbackResponse) {
+        if (feedbackResponseError) feedbackResponseError.textContent = 'Please select Yes or No.';
+        return;
+      }
+
+      var fd = new FormData(feedbackForm);
+      var email = String(fd.get('email') || '').trim();
+      var emailInput = $('input[name="email"]', feedbackForm);
+      var emailField = emailInput ? emailInput.closest('.form-field') : null;
+      var emailError = emailField ? $('.form-error', emailField) : null;
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (emailField) emailField.classList.add('has-error');
+        if (emailError) emailError.textContent = 'Enter a valid email address, or leave it blank.';
+        return;
+      }
+      if (emailField) emailField.classList.remove('has-error');
+      if (emailError) emailError.textContent = '';
+
+      var comment = String(fd.get('comment') || '').trim();
+      var payload = {
+        response: feedbackResponse,
+        comment: comment,
+        email: email,
+        page: feedbackPage(),
+        website: String(fd.get('website') || '')
+      };
+
+      if (feedbackSubmitBtn) feedbackSubmitBtn.disabled = true;
+      if (feedbackMsg) { feedbackMsg.hidden = true; feedbackMsg.className = 'feedback-msg'; }
+
+      fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) { return { ok: res.ok, data: data }; });
+      }).then(function (result) {
+        if (feedbackSubmitBtn) feedbackSubmitBtn.disabled = false;
+        if (!result.ok) {
+          if (feedbackMsg) {
+            feedbackMsg.textContent = (result.data && result.data.error) || 'Something went wrong. Please try again.';
+            feedbackMsg.className = 'feedback-msg is-error';
+            feedbackMsg.hidden = false;
+          }
+          return;
+        }
+        if (window.tfTrack && comment) window.tfTrack('feedback_comment_submitted', { response: feedbackResponse, page: payload.page });
+        if (feedbackMsg) {
+          feedbackMsg.textContent = 'Thank you for your feedback!';
+          feedbackMsg.className = 'feedback-msg is-success';
+          feedbackMsg.hidden = false;
+        }
+        feedbackForm.reset();
+        feedbackBtns.forEach(function (b) { b.classList.remove('active'); });
+        feedbackResponse = '';
+      }).catch(function () {
+        if (feedbackSubmitBtn) feedbackSubmitBtn.disabled = false;
+        if (feedbackMsg) {
+          feedbackMsg.textContent = 'Network error. Please try again.';
+          feedbackMsg.className = 'feedback-msg is-error';
+          feedbackMsg.hidden = false;
+        }
+      });
+    });
+  }
 })();

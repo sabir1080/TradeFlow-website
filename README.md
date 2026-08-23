@@ -14,6 +14,10 @@ development services by Sabir Shah.
 | `404.html` | Not-found page (uses the same design system) |
 | `assets/screens/` | 45 real TradeFlow application screenshots (WebP) |
 | `assets/logo/` | Brand logo variants |
+| `src/worker.js` | Cloudflare Worker — feedback API + password-gated admin dashboard — see "Feedback System" below |
+| `migrations/` | D1 database migrations (Wrangler's migration system) |
+| `wrangler.jsonc` | Cloudflare Workers config — static assets + the worker + D1 binding |
+| `.assetsignore` | Files excluded from public static serving (backend source, config, VCS internals) |
 
 ## Design
 
@@ -160,6 +164,103 @@ strict GDPR/ePrivacy compliance, add a consent step before the `gtag.js`
 script tag is injected in `analytics.js` (e.g. gate the `isConfigured`
 block behind a stored consent flag) — the code is centralized there
 specifically to make that a small, contained change later.
+
+## Feedback System
+
+A compact "Your feedback is valuable to us." / Yes-No / Comments / Email(optional)
+section near the end of the page (`#feedback` in `index.html`), backed by a
+Cloudflare Worker (`src/worker.js`) and a D1 database. Every submission is
+stored as its own row — nothing is pre-aggregated — so an admin can slice
+by day/week/month/year/custom range, by page, or by response.
+
+### One-time setup — required before Cloudflare Workers Builds can deploy at all
+
+`wrangler.jsonc` currently has a placeholder `database_id`. Until it's
+replaced with a real one, **every** Cloudflare Workers Build for this repo
+fails — not just the feedback feature — with Cloudflare error 10021
+("binding DB of type d1 must have a valid id specified"), because Wrangler
+tries to attach the D1 binding to a database that doesn't exist yet. This
+isn't a code bug and can't be fixed from a commit alone: a real D1
+database has to exist in the Cloudflare account first. These steps
+provision that (and the admin password), so they need to be run by
+whoever owns the Cloudflare account, from a machine with `wrangler`
+logged in (`wrangler login`):
+
+```bash
+# 1. Create the D1 database, then paste the returned database_id into
+#    wrangler.jsonc (replace "REPLACE_WITH_YOUR_D1_DATABASE_ID")
+wrangler d1 create tradeflow_feedback
+
+# 2. Apply the schema migration to the real (remote) database
+wrangler d1 migrations apply tradeflow_feedback --remote
+
+# 3. Set the admin dashboard password (never stored in this repo)
+wrangler secret put ADMIN_PASSWORD
+# Optional — defaults to "admin" if not set:
+wrangler secret put ADMIN_USERNAME
+```
+
+After that, Cloudflare Workers Builds deploys `src/worker.js` exactly like
+it already deploys the static site — no separate deploy step.
+
+### Public feedback widget
+
+- Copy is exactly: "Your feedback is valuable to us." / "Do you like this page?"
+- **Yes** / **No** are plain text buttons (no icons), styled with the same
+  pill-toggle pattern already used for the Perpetual/Subscription and
+  PKR/USD switches on the pricing section — no new visual style introduced.
+- Comments and Email are both optional; Email is explicitly labelled
+  "(optional)". A response (Yes or No) is required before submit.
+- The public page never fetches or displays any totals, counts, other
+  visitors' comments, or emails — it only ever POSTs to `/api/feedback`.
+
+### Data stored per submission (`feedback` table, one row each)
+
+`response` (yes/no) · `comment` · `email` · `page` (path + hash of the page
+the form was submitted from) · `created_at` (UTC ISO-8601 timestamp) ·
+`ip_hash` (SHA-256 of the submitter's IP, for abuse detection only — the
+raw IP is never stored) · `user_agent`.
+
+### Admin dashboard — `/admin`
+
+Password-protected with HTTP Basic Auth (`ADMIN_USERNAME` / `ADMIN_PASSWORD`
+Worker secrets above — there is no other auth system on this static site to
+extend, so this is the minimal new one). Shows:
+
+- **Total Yes / Total No / Total Comments / Total Submissions**, computed
+  live from the raw records (never a stored running total).
+- **All individual comments**, newest first, each with its date/time, page,
+  Yes/No response, and email if one was given.
+- Filters (combinable): single date, date range, page/URL, Yes/No, and
+  whether an email was provided.
+
+`GET /api/admin/feedback` and `GET /api/admin/comments` are the two JSON
+endpoints the dashboard calls — both require the same Basic Auth and are
+never linked from, or reachable via, the public site.
+
+### Security & privacy
+
+- Comment/email are validated and length-capped server-side; email format
+  is checked with a regex when provided; comments are stored as submitted
+  and HTML-escaped only at render time in the admin dashboard (never
+  executed as HTML).
+- A hidden honeypot field plus a per-IP-hash rate limit (5 submissions per
+  minute) provide baseline spam/abuse protection — there was no existing
+  spam-protection convention in this repo to reuse.
+- The submission endpoint checks the request's Origin/Referer matches the
+  site's own host (this site has no visitor login/session, so token-based
+  CSRF isn't applicable — an anonymous public form's realistic exposure is
+  cross-site auto-submission, which this blocks).
+- If `ADMIN_PASSWORD` is never configured, `/admin` and the admin API
+  **deny all requests** rather than defaulting open.
+- `src/worker.js`, `migrations/`, and `wrangler.jsonc` are excluded from
+  public static serving via `.assetsignore`.
+
+### GA4 events (reuses the existing `analytics.js` / `window.tfTrack`)
+
+`feedback_yes`, `feedback_no` (on selecting a response) and
+`feedback_comment_submitted` (on a successful submit that included a
+comment). No new GA4 script, ID, or GTM was added — see "Analytics (GA4)" above.
 
 ## Before publishing — check these
 

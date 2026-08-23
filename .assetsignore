@@ -1,0 +1,6 @@
+.git/
+.wrangler/
+src/
+migrations/
+wrangler.jsonc
+.assetsignore
