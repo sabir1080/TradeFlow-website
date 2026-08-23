@@ -1009,10 +1009,11 @@
 
   /* ------------------------------------------------------------------
      13. Testimonials — loaded from GET /api/testimonials (admin-
-     approved "yes" feedback comments only). The section stays hidden
-     (see index.html) unless at least one approved testimonial exists;
-     no hardcoded/sample content is ever shown.
+     approved "yes" feedback comments only). The section (and its
+     heading) stays hidden until at least MIN_TESTIMONIALS approved
+     testimonials exist; no hardcoded/sample content is ever shown.
      ------------------------------------------------------------------ */
+  var MIN_TESTIMONIALS = 3;
   var testimonialsSection = $('#testimonials');
   var testimonialGrid = $('#testimonialGrid');
   if (testimonialsSection && testimonialGrid) {
@@ -1020,7 +1021,7 @@
       .then(function (res) { return res.ok ? res.json() : { testimonials: [] }; })
       .then(function (data) {
         var list = (data && data.testimonials) || [];
-        if (!list.length) return;
+        if (list.length < MIN_TESTIMONIALS) return;
         testimonialGrid.innerHTML = list.map(function (t) {
           return '<article class="quote card reveal"><p>' + esc(t.comment) + '</p></article>';
         }).join('');

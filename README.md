@@ -244,7 +244,8 @@ The `#testimonials` section on the public site (below Technology, above
 About) is entirely database-driven — there is no hardcoded/sample
 testimonial content anywhere in `index.html`. It stays `hidden` and shows
 nothing until `GET /api/testimonials` (public, no auth) returns at least
-one row, which only happens once an admin explicitly approves a comment.
+3 rows (script.js's `MIN_TESTIMONIALS`) — rows only appear there once an
+admin explicitly approves a comment.
 
 - A `published` column (migration `0002_add_testimonial_published.sql`,
   `INTEGER NOT NULL DEFAULT 0`) was added to `feedback`. It defaults to 0
