@@ -3,9 +3,11 @@
    ==========================================================================
    Runs for every request (see wrangler.jsonc "main"). Handles:
      POST /api/feedback           - public, stores one feedback record
+     GET  /api/testimonials       - public, approved "yes" comments only
      GET  /admin                  - password-gated dashboard (HTML)
      GET  /api/admin/feedback     - password-gated stats JSON
      GET  /api/admin/comments     - password-gated comment list JSON
+     POST /api/admin/testimonial  - password-gated publish/hide toggle
    Everything else falls through to env.ASSETS.fetch(request), so the
    existing static site is served completely unchanged.
 
@@ -197,13 +199,48 @@ async function handleAdminComments(request, env, url) {
     ? where + " AND comment IS NOT NULL AND TRIM(comment) != ''"
     : "WHERE comment IS NOT NULL AND TRIM(comment) != ''";
   const sql = `
-    SELECT id, response, comment, email, page, created_at
+    SELECT id, response, comment, email, page, created_at, published
     FROM feedback ${commentClause}
     ORDER BY created_at DESC
     LIMIT 500
   `;
   const { results } = await env.DB.prepare(sql).bind(...params).all();
   return json({ comments: results || [] });
+}
+
+/* ------------------------------------------------------------------
+   POST /api/admin/testimonial - publish/hide one "yes" comment as a
+   public testimonial. Body: { id, published: true|false }.
+   ------------------------------------------------------------------ */
+async function handleAdminTestimonialToggle(request, env) {
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: 'Invalid request body.' }, 400); }
+
+  const id = Number(body.id);
+  if (!Number.isInteger(id) || id <= 0) return json({ error: 'Invalid id.' }, 400);
+  const published = body.published ? 1 : 0;
+
+  // Only a "yes" response with a real comment can ever be published.
+  // Checked explicitly (rather than relying on D1's reported row-count)
+  // so eligibility is unambiguous either way.
+  const row = await env.DB.prepare(
+    "SELECT id FROM feedback WHERE id = ? AND response = 'yes' AND comment IS NOT NULL AND TRIM(comment) != ''"
+  ).bind(id).first();
+  if (!row) return json({ error: 'Comment not found or not eligible.' }, 404);
+
+  await env.DB.prepare('UPDATE feedback SET published = ? WHERE id = ?').bind(published, id).run();
+  return json({ ok: true, id, published: !!published });
+}
+
+/* ------------------------------------------------------------------
+   GET /api/testimonials - PUBLIC. Only admin-approved "yes" comments,
+   and only the minimum safe fields (never email, ip_hash, user_agent).
+   ------------------------------------------------------------------ */
+async function handlePublicTestimonials(env) {
+  const { results } = await env.DB.prepare(
+    "SELECT id, comment FROM feedback WHERE response = 'yes' AND comment IS NOT NULL AND TRIM(comment) != '' AND published = 1 ORDER BY created_at DESC LIMIT 50"
+  ).all();
+  return json({ testimonials: results || [] });
 }
 
 /* ------------------------------------------------------------------
@@ -238,10 +275,15 @@ function adminPageHtml() {
   h2{font-size:15px;margin:0 0 12px}
   .comment{background:#0e1626;border:1px solid #1c2a44;border-radius:10px;padding:14px 16px;margin-bottom:10px}
   .comment p{margin:0 0 8px;font-size:14px;white-space:pre-wrap;word-break:break-word}
-  .comment .meta{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:#8ea0bd}
+  .comment .meta{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:#8ea0bd}
   .comment .tag{padding:2px 8px;border-radius:99px;font-weight:600}
   .tag.yes{background:rgba(37,201,143,.15);color:#25c98f}
   .tag.no{background:rgba(255,90,90,.15);color:#ff5a5a}
+  .tag.published{background:rgba(56,198,255,.15);color:#38c6ff}
+  .tag.unpublished{background:rgba(142,160,189,.15);color:#8ea0bd}
+  .pub-btn{margin-left:auto;background:transparent;border:1px solid #22314f;color:#e7edf7;border-radius:8px;padding:5px 12px;font:inherit;font-size:11.5px;cursor:pointer}
+  .pub-btn:hover{border-color:#38c6ff}
+  .pub-btn:disabled{opacity:.5;cursor:default}
   .empty{color:#8ea0bd;font-size:13px;padding:20px 0}
   .loading{color:#8ea0bd;font-size:13px}
 </style>
@@ -300,13 +342,22 @@ function adminPageHtml() {
     el.innerHTML = list.map(function (c) {
       var dt = new Date(c.created_at);
       var dtStr = isNaN(dt) ? c.created_at : dt.toLocaleString();
+      var isYes = c.response === 'yes';
+      var pubTag = isYes
+        ? '<span class="tag ' + (c.published ? 'published' : 'unpublished') + '">' + (c.published ? 'Published' : 'Unpublished') + '</span>'
+        : '';
+      var pubBtn = isYes
+        ? '<button type="button" class="pub-btn" data-id="' + c.id + '" data-publish="' + (c.published ? '0' : '1') + '">' + (c.published ? 'Hide' : 'Publish') + '</button>'
+        : '';
       return '<div class="comment">' +
         '<p>' + escapeHtml(c.comment) + '</p>' +
         '<div class="meta">' +
-          '<span class="tag ' + (c.response === 'yes' ? 'yes' : 'no') + '">' + (c.response === 'yes' ? 'Yes' : 'No') + '</span>' +
+          '<span class="tag ' + (isYes ? 'yes' : 'no') + '">' + (isYes ? 'Yes' : 'No') + '</span>' +
           '<span>' + escapeHtml(dtStr) + '</span>' +
           '<span>' + escapeHtml(c.page) + '</span>' +
           (c.email ? '<span>' + escapeHtml(c.email) + '</span>' : '<span>No email</span>') +
+          pubTag +
+          pubBtn +
         '</div>' +
       '</div>';
     }).join('');
@@ -319,6 +370,16 @@ function adminPageHtml() {
   }
   document.getElementById('filterForm').addEventListener('submit', function (e) { e.preventDefault(); load(); });
   document.getElementById('clearBtn').addEventListener('click', function () { document.getElementById('filterForm').reset(); load(); });
+  document.getElementById('comments').addEventListener('click', function (e) {
+    var btn = e.target.closest('.pub-btn');
+    if (!btn) return;
+    btn.disabled = true;
+    fetch('/api/admin/testimonial', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: Number(btn.dataset.id), published: btn.dataset.publish === '1' })
+    }).then(load).catch(function () { btn.disabled = false; });
+  });
   load();
 </script>
 </body>
@@ -353,6 +414,23 @@ export default {
     if (url.pathname === '/api/admin/comments') {
       if (!checkAdminAuth(request, env)) return unauthorized();
       return handleAdminComments(request, env, url);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/admin/testimonial') {
+      if (!checkAdminAuth(request, env)) return unauthorized();
+      try {
+        return await handleAdminTestimonialToggle(request, env);
+      } catch (e) {
+        return json({ error: 'Something went wrong. Please try again.' }, 500);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/testimonials') {
+      try {
+        return await handlePublicTestimonials(env);
+      } catch (e) {
+        return json({ testimonials: [] });
+      }
     }
 
     return env.ASSETS.fetch(request);
